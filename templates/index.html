@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroAge · 脑龄预测智能评估</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cream:#faf8f4;--cream-2:#f3efe8;--cream-3:#ece7dd;
+  --surface:#fff;--surface-2:#f8f6f2;
+  --primary:#1c1917;--primary-2:#44403c;--primary-3:#78716c;
+  --muted:#a8a29e;--muted-2:#d6d3d1;
+  --accent:#e86a4f;--accent-2:#d4533a;--accent-light:rgba(232,106,79,.08);--accent-mid:rgba(232,106,79,.15);
+  --blue:#3b82f6;--green:#10b981;--green-light:rgba(16,185,129,.08);
+  --amber:#f59e0b;--amber-light:rgba(245,158,11,.08);
+  --red:#ef4444;--red-light:rgba(239,68,68,.08);
+  --font-d:'Fraunces',Georgia,serif;
+  --font-b:'Outfit',-apple-system,sans-serif;
+  --rs:10px;--rm:16px;--rl:24px;
+  --shadow:0 4px 16px rgba(28,25,23,.06),0 2px 4px rgba(28,25,23,.04);
+  --shadow-lg:0 12px 40px rgba(28,25,23,.08),0 4px 12px rgba(28,25,23,.04);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);background:var(--cream);color:var(--primary);line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#fff}
+
+/* Nav */
+nav{position:sticky;top:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(250,248,244,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(214,211,209,.35)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-size:20px;font-weight:600}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:block;font-style:normal}
+.nav-r{display:flex;align-items:center;gap:20px;font-size:13px;color:var(--primary-3)}
+.nav-r a{color:var(--primary-3);text-decoration:none;font-weight:500}
+.nav-r a:hover{color:var(--primary)}
+.hosp-tag{padding:5px 12px;border:1px solid var(--muted-2);border-radius:100px;font-size:12px;color:var(--primary-3)}
+
+.container{max-width:960px;margin:0 auto;padding:0 32px}
+
+/* Hero */
+.hero{padding:100px 0 32px;text-align:center}
+.hero-eyebrow{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.hero h1{font-family:var(--font-d);font-size:clamp(32px,5vw,50px);font-weight:400;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero p{font-size:16px;color:var(--primary-3);max-width:480px;margin:0 auto;line-height:1.7;font-weight:300}
+
+/* Main card */
+.main-card{max-width:680px;margin:32px auto 0;background:var(--surface);border-radius:var(--rl);padding:44px;box-shadow:var(--shadow-lg);border:1px solid rgba(214,211,209,.25);position:relative;overflow:hidden}
+.main-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--amber),var(--green))}
+.card-title{font-family:var(--font-d);font-size:22px;font-weight:500;text-align:center;margin-bottom:4px}
+.card-sub{font-size:13px;color:var(--primary-3);text-align:center;margin-bottom:28px}
+
+/* Form */
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11px;font-weight:600;color:var(--primary-2);letter-spacing:.05em;text-transform:uppercase}
+.fg input,.fg select{padding:10px 12px;border-radius:var(--rs);border:1.5px solid var(--cream-3);background:var(--surface-2);font-family:var(--font-b);font-size:14px;color:var(--primary);outline:none;transition:.25s}
+.fg input:focus,.fg select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+
+/* Upload zone */
+.upload-label{font-size:11px;font-weight:600;color:var(--primary-2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.drop-zone{border:2px dashed var(--cream-3);border-radius:var(--rm);padding:36px 24px;text-align:center;cursor:pointer;transition:.3s;position:relative;background:var(--surface-2)}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:var(--accent-light)}
+.drop-zone.has-image{border-style:solid;border-color:var(--green);padding:12px}
+.drop-icon{font-size:32px;margin-bottom:8px;opacity:.4}
+.drop-text{font-size:14px;color:var(--primary-2);font-weight:500;margin-bottom:4px}
+.drop-hint{font-size:12px;color:var(--muted)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.preview-wrap{position:relative;display:inline-block}
+.preview-wrap img{max-width:100%;max-height:200px;border-radius:var(--rs);display:block}
+.preview-remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+
+/* Sample grid */
+.sample-section{margin-top:16px}
+.sample-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--primary-3);cursor:pointer;margin-bottom:10px;user-select:none}
+.sample-toggle::before{content:'';width:16px;height:1px;background:var(--muted-2)}
+.sample-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sample-card{border-radius:var(--rs);border:2px solid var(--cream-3);overflow:hidden;cursor:pointer;transition:.3s;background:var(--surface-2)}
+.sample-card:hover{border-color:var(--muted);transform:translateY(-2px);box-shadow:var(--shadow)}
+.sample-card.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-mid)}
+.sample-card img{width:100%;aspect-ratio:1;object-fit:cover}
+.sample-info{padding:6px 8px;display:flex;justify-content:space-between;align-items:center}
+.sample-id{font-size:10px;font-weight:600;color:var(--primary-2);letter-spacing:.03em}
+.sample-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;letter-spacing:.04em}
+.b-cn{background:var(--green-light);color:var(--green)}
+.b-mci{background:var(--amber-light);color:var(--amber)}
+.b-ad{background:var(--red-light);color:var(--red)}
+
+/* Button */
+.btn-go{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;border:none;border-radius:var(--rs);background:var(--accent);color:#fff;font-family:var(--font-b);font-size:15px;font-weight:600;cursor:pointer;transition:.3s;margin-top:20px}
+.btn-go:hover{background:var(--accent-2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(232,106,79,.25)}
+.btn-go:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-go svg{width:18px;height:18px}
+
+/* Processing */
+.proc-overlay{position:absolute;inset:0;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;transition:.4s;z-index:10;border-radius:var(--rl)}
+.proc-overlay.on{opacity:1;pointer-events:all}
+.proc-ring{width:56px;height:56px;border:3px solid var(--cream-3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-text{font-size:14px;color:var(--primary-3);font-weight:500}
+.proc-steps{display:flex;flex-direction:column;gap:6px;width:220px}
+.pstep{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);transition:.3s}
+.pstep.on{color:var(--accent)}
+.pstep.ok{color:var(--green)}
+.pdot{width:5px;height:5px;border-radius:50%;background:var(--muted-2);transition:.3s;flex-shrink:0}
+.pstep.on .pdot{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.pstep.ok .pdot{background:var(--green)}
+
+/* Error */
+.error-msg{background:var(--red-light);border:1px solid rgba(239,68,68,.2);color:var(--red);padding:10px 14px;border-radius:var(--rs);font-size:13px;margin-top:12px;display:none}
+.error-msg.show{display:block}
+
+/* ── Results ── */
+.results{max-width:960px;margin:0 auto;padding:0 32px 80px;opacity:0;transform:translateY(20px);transition:.8s cubic-bezier(.16,1,.3,1);pointer-events:none;max-height:0;overflow:hidden}
+.results.show{opacity:1;transform:translateY(0);pointer-events:all;max-height:5000px;margin-top:48px}
+.res-head{text-align:center;margin-bottom:36px}
+.res-head h2{font-family:var(--font-d);font-size:30px;font-weight:400;margin-bottom:6px;letter-spacing:-.01em}
+.res-head p{font-size:13px;color:var(--primary-3)}
+
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rpanel{background:var(--surface);border-radius:var(--rl);padding:28px;box-shadow:var(--shadow);border:1px solid rgba(214,211,209,.25)}
+
+/* Brain age ring */
+.age-panel{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.age-ring{position:relative;width:170px;height:170px;margin-bottom:16px}
+.age-ring svg{width:100%;height:100%}
+.age-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.age-num{font-family:var(--font-d);font-size:48px;font-weight:300;line-height:1;letter-spacing:-.03em}
+.age-lbl{font-size:12px;color:var(--primary-3);margin-top:2px}
+.age-delta{display:inline-flex;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;margin-top:6px}
+.d-pos{background:var(--amber-light);color:var(--amber)}
+.d-neg{background:var(--green-light);color:var(--green)}
+
+/* Staging */
+.stg-panel{display:flex;flex-direction:column;justify-content:center}
+.stg-title{font-size:11px;font-weight:600;color:var(--primary-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.stg-main{margin-bottom:20px}
+.stg-main-lbl{font-size:12px;color:var(--primary-3);margin-bottom:4px}
+.stg-main-val{display:flex;align-items:baseline;gap:8px}
+.stg-name{font-family:var(--font-d);font-size:34px;font-weight:400}
+.stg-desc{font-size:12px;color:var(--primary-3)}
+.stg-bars{display:flex;flex-direction:column;gap:10px}
+.sb-row{display:flex;align-items:center;gap:10px}
+.sb-lbl{width:28px;font-size:11px;font-weight:600}
+.sb-lbl.cn{color:var(--green)}.sb-lbl.mci{color:var(--amber)}.sb-lbl.ad{color:var(--red)}
+.sb-track{flex:1;height:7px;background:var(--cream-2);border-radius:4px;overflow:hidden}
+.sb-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.sb-fill.cn{background:var(--green)}.sb-fill.mci{background:var(--amber)}.sb-fill.ad{background:var(--red)}
+.sb-val{width:36px;font-size:11px;font-weight:600;color:var(--primary-2);text-align:right;font-family:var(--font-d)}
+
+/* Preview in results */
+.preview-panel{grid-column:1/-1;display:flex;gap:14px;align-items:stretch;padding:20px!important}
+.prev-img{flex:1;border-radius:var(--rs);overflow:hidden;border:1px solid var(--cream-3);aspect-ratio:1.2;background:#111;position:relative}
+.prev-img img{width:100%;height:100%;object-fit:cover}
+.prev-img .vlbl{position:absolute;bottom:6px;left:6px;background:rgba(28,25,23,.55);backdrop-filter:blur(6px);color:#fff;padding:2px 8px;border-radius:5px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.prev-meta{width:240px;padding:20px;background:var(--surface-2);border-radius:var(--rs);border:1px solid var(--cream-3);display:flex;flex-direction:column;justify-content:center;gap:12px}
+.mi-row{display:flex;justify-content:space-between;font-size:12px}
+.mi-lbl{color:var(--primary-3)}.mi-val{font-weight:600}
+
+/* Regions */
+.reg-panel{grid-column:1/-1;padding:24px 28px!important}
+.reg-title{font-size:11px;font-weight:600;color:var(--primary-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
+.reg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.reg-card{padding:14px;border-radius:var(--rs);background:var(--surface-2);border:1px solid var(--cream-3);transition:.3s}
+.reg-card:hover{border-color:var(--muted-2);box-shadow:0 2px 8px rgba(28,25,23,.06)}
+.reg-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.reg-sub{font-size:10px;color:var(--primary-3);margin-bottom:10px}
+.reg-bar{height:3px;background:var(--cream-3);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.reg-fill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.16,1,.3,1)}
+.reg-score{font-size:10px;font-weight:600;color:var(--primary-2)}
+
+/* How */
+.how-section{padding:64px 0;border-top:1px solid var(--cream-3);margin-top:40px}
+.how-title{text-align:center;font-family:var(--font-d);font-size:28px;font-weight:400;margin-bottom:40px;letter-spacing:-.01em}
+.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.how-step{text-align:center;padding:20px 12px}
+.how-num{width:32px;height:32px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:var(--font-d)}
+.how-s-title{font-size:14px;font-weight:600;margin-bottom:6px}
+.how-s-desc{font-size:12px;color:var(--primary-3);line-height:1.6}
+
+footer{padding:32px 0;border-top:1px solid var(--cream-3)}
+footer .container{display:flex;justify-content:space-between;align-items:center}
+.f-left{font-size:12px;color:var(--primary-3)}
+.f-left strong{color:var(--primary);font-weight:600}
+.f-right{font-size:11px;color:var(--muted);font-family:var(--font-d);font-style:italic}
+
+@media(max-width:768px){
+  .form-row{grid-template-columns:1fr}
+  .res-grid{grid-template-columns:1fr}
+  .reg-grid{grid-template-columns:repeat(2,1fr)}
+  .preview-panel{flex-direction:column}
+  .prev-meta{width:100%}
+  .how-grid{grid-template-columns:repeat(2,1fr)}
+  .main-card{padding:28px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><i></i> NeuroAge</div>
+  <div class="nav-r">
+    <a href="#how">工作原理</a>
+    <span class="hosp-tag">江苏省人民医院</span>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Brain Age Prediction</div>
+    <h1>上传脑部 MRI，获取 <em>脑龄评估</em> 报告</h1>
+    <p>拖拽或选择脑部 MRI 影像，系统将自动分析并生成脑龄预测与认知分期评估报告。</p>
+  </div>
+</section>
+
+<div class="container">
+  <div class="main-card" id="mainCard">
+    <div class="card-title">开始评估</div>
+    <div class="card-sub">填写基本信息，上传脑部 MRI 影像或选择示例</div>
+
+    <div class="form-row">
+      <div class="fg">
+        <label>患者 ID</label>
+        <input type="text" id="f-id" value="SUB-0001" placeholder="编号">
+      </div>
+      <div class="fg">
+        <label>年龄</label>
+        <input type="number" id="f-age" value="72" min="30" max="100">
+      </div>
+      <div class="fg">
+        <label>性别</label>
+        <select id="f-sex"><option value="male">男性</option><option value="female">女性</option></select>
+      </div>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="upload-label">上传脑部 MRI 影像</div>
+    <div class="drop-zone" id="dropZone">
+      <div id="dropContent">
+        <div class="drop-icon">🧠</div>
+        <div class="drop-text">拖拽影像到此处，或点击选择文件</div>
+        <div class="drop-hint">支持 PNG / JPG / TIFF / BMP，最大 16MB</div>
+      </div>
+      <div id="dropPreview" style="display:none">
+        <div class="preview-wrap">
+          <img id="previewImg" src="" alt="preview">
+          <button class="preview-remove" onclick="clearUpload(event)" title="移除">&times;</button>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Sample selector -->
+    <div class="sample-section">
+      <div class="sample-toggle" onclick="toggleSamples()">
+        <span>或使用示例影像</span>
+      </div>
+      <div class="sample-grid" id="sampleGrid" style="display:none"></div>
+    </div>
+
+    <button class="btn-go" id="btnGo" onclick="analyze()" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span>开始脑龄预测</span>
+    </button>
+
+    <!-- Processing overlay -->
+    <div class="proc-overlay" id="procOverlay">
+      <div class="proc-ring"></div>
+      <div class="proc-text">正在分析脑部影像...</div>
+      <div class="proc-steps">
+        <div class="pstep" id="ps1"><div class="pdot"></div>MRI 预处理与标准化</div>
+        <div class="pstep" id="ps2"><div class="pdot"></div>CLIP 视觉特征提取</div>
+        <div class="pstep" id="ps3"><div class="pdot"></div>患者条件先验融合</div>
+        <div class="pstep" id="ps4"><div class="pdot"></div>MoE 模型推理</div>
+        <div class="pstep" id="ps5"><div class="pdot"></div>生成评估报告</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<section class="results" id="results">
+  <div class="container">
+    <div class="res-head">
+      <h2>评估报告</h2>
+      <p id="resSub"></p>
+    </div>
+    <div class="res-grid">
+      <div class="rpanel age-panel">
+        <div class="age-ring">
+          <svg viewBox="0 0 170 170">
+            <circle cx="85" cy="85" r="74" fill="none" stroke="var(--cream-2)" stroke-width="5"/>
+            <circle id="ageArc" cx="85" cy="85" r="74" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="465" stroke-dashoffset="465" transform="rotate(-90 85 85)" style="transition:stroke-dashoffset 1.5s cubic-bezier(.16,1,.3,1)"/>
+          </svg>
+          <div class="age-center">
+            <div class="age-num" id="rAge">—</div>
+            <div class="age-lbl">预测脑龄 (岁)</div>
+          </div>
+        </div>
+        <div class="age-delta" id="rDelta"></div>
+        <div style="font-size:11px;color:var(--primary-3);margin-top:4px" id="rDeltaDesc"></div>
+      </div>
+
+      <div class="rpanel stg-panel">
+        <div class="stg-title">Alzheimer's 分期评估</div>
+        <div class="stg-main">
+          <div class="stg-main-lbl">预测结果</div>
+          <div class="stg-main-val">
+            <span class="stg-name" id="rStg">—</span>
+            <span class="stg-desc" id="rStgDesc"></span>
+          </div>
+        </div>
+        <div class="stg-bars">
+          <div class="sb-row"><span class="sb-lbl cn">CN</span><div class="sb-track"><div class="sb-fill cn" id="bCN"></div></div><span class="sb-val" id="vCN">—</span></div>
+          <div class="sb-row"><span class="sb-lbl mci">MCI</span><div class="sb-track"><div class="sb-fill mci" id="bMCI"></div></div><span class="sb-val" id="vMCI">—</span></div>
+          <div class="sb-row"><span class="sb-lbl ad">AD</span><div class="sb-track"><div class="sb-fill ad" id="bAD"></div></div><span class="sb-val" id="vAD">—</span></div>
+        </div>
+      </div>
+
+      <div class="rpanel preview-panel" id="prevPanel">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="rpanel reg-panel">
+        <div class="reg-title">脑区归因分析 · Region Attribution</div>
+        <div class="reg-grid" id="regGrid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-section" id="how">
+  <div class="container">
+    <h2 class="how-title">工作原理</h2>
+    <div class="how-grid">
+      <div class="how-step"><div class="how-num">1</div><div class="how-s-title">影像输入</div><div class="how-s-desc">上传脑部 MRI 扫描，支持 PNG/JPG/TIFF 等常见格式，系统自动预处理与标准化。</div></div>
+      <div class="how-step"><div class="how-num">2</div><div class="how-s-title">特征提取</div><div class="how-s-desc">Frozen CLIP 编码器提取视觉特征，结合患者年龄、性别等信息生成条件化先验。</div></div>
+      <div class="how-step"><div class="how-num">3</div><div class="how-s-title">模型推理</div><div class="how-s-desc">Scale-Preserving MoE 路由进行融合推理，输出脑龄预测与 CN/MCI/AD 分期概率。</div></div>
+      <div class="how-step"><div class="how-num">4</div><div class="how-s-title">评估报告</div><div class="how-s-desc">生成脑龄差距、分期置信度、脑区归因的完整报告，辅助临床决策。</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="f-left"><strong>江苏省人民医院</strong> · 神经内科 · 认知障碍早筛中心</div>
+    <div class="f-right">NeuroAge v1.0</div>
+  </div>
+</footer>
+
+<script>
+let uploadedFile = null;
+let selectedSample = null;
+
+// ── Drop zone ──
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const dropContent = document.getElementById('dropContent');
+const dropPreview = document.getElementById('dropPreview');
+const previewImg = document.getElementById('previewImg');
+const btnGo = document.getElementById('btnGo');
+const errorMsg = document.getElementById('errorMsg');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) handleFile(files[0]);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) {
+    showError('请上传图片文件（PNG / JPG / TIFF 等）');
+    return;
+  }
+  if (file.size > 16 * 1024 * 1024) {
+    showError('文件大小不能超过 16MB');
+    return;
+  }
+  hideError();
+  uploadedFile = file;
+  selectedSample = null;
+  // Clear sample selection
+  document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    dropContent.style.display = 'none';
+    dropPreview.style.display = 'block';
+    dropZone.classList.add('has-image');
+    btnGo.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearUpload(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  uploadedFile = null;
+  fileInput.value = '';
+  dropContent.style.display = '';
+  dropPreview.style.display = 'none';
+  dropZone.classList.remove('has-image');
+  updateBtnState();
+}
+
+// ── Samples ──
+let samplesLoaded = false;
+function toggleSamples() {
+  const grid = document.getElementById('sampleGrid');
+  if (grid.style.display === 'none') {
+    grid.style.display = 'grid';
+    if (!samplesLoaded) loadSamples();
+  } else {
+    grid.style.display = 'none';
+  }
+}
+
+async function loadSamples() {
+  try {
+    const res = await fetch('/api/samples');
+    const subjects = await res.json();
+    const grid = document.getElementById('sampleGrid');
+    grid.innerHTML = '';
+
+    const badges = {'sub-0001':'b-mci','sub-0002':'b-cn','sub-0003':'b-ad','sub-0010':'b-mci'};
+    const labels = {'sub-0001':'MCI','sub-0002':'CN','sub-0003':'AD','sub-0010':'MCI'};
+
+    subjects.forEach(sub => {
+      const viewFile = sub.views.axial || sub.views.coronal || sub.views.sagittal || Object.values(sub.views)[0];
+      const badge = badges[sub.id] || 'b-mci';
+      const label = labels[sub.id] || '—';
+
+      const card = document.createElement('div');
+      card.className = 'sample-card';
+      card.dataset.sample = viewFile;
+      card.dataset.sub = sub.id;
+      card.innerHTML = `
+        <img src="/api/samples/${viewFile}" alt="${sub.id}">
+        <div class="sample-info">
+          <span class="sample-id">${sub.id.toUpperCase()}</span>
+          <span class="sample-badge ${badge}">${label}</span>
+        </div>`;
+      card.addEventListener('click', () => selectSample(card, viewFile));
+      grid.appendChild(card);
+    });
+    samplesLoaded = true;
+  } catch(e) {
+    console.error('Failed to load samples', e);
+  }
+}
+
+function selectSample(card, filename) {
+  document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  selectedSample = filename;
+  // Clear uploaded file
+  uploadedFile = null;
+  fileInput.value = '';
+  dropContent.style.display = '';
+  dropPreview.style.display = 'none';
+  dropZone.classList.remove('has-image');
+  // Show sample preview in drop zone
+  previewImg.src = '/api/samples/' + filename;
+  dropContent.style.display = 'none';
+  dropPreview.style.display = 'block';
+  dropZone.classList.add('has-image');
+  btnGo.disabled = false;
+}
+
+function updateBtnState() {
+  btnGo.disabled = !uploadedFile && !selectedSample;
+}
+
+// ── Analyze ──
+async function analyze() {
+  const age = parseInt(document.getElementById('f-age').value) || 72;
+  const sex = document.getElementById('f-sex').value;
+  const pid = document.getElementById('f-id').value || 'SUB-0001';
+
+  const overlay = document.getElementById('procOverlay');
+  const results = document.getElementById('results');
+  overlay.classList.add('on');
+  results.classList.remove('show');
+
+  // Reset steps
+  for (let i=1;i<=5;i++) document.getElementById('ps'+i).classList.remove('on','ok');
+
+  // Animate steps
+  for (let i=1;i<=5;i++) {
+    await delay(500);
+    if (i>1) document.getElementById('ps'+(i-1)).classList.replace('on','ok');
+    document.getElementById('ps'+i).classList.add('on');
+  }
+  await delay(400);
+  document.getElementById('ps5').classList.replace('on','ok');
+
+  // Build form data
+  const fd = new FormData();
+  fd.append('age', age);
+  fd.append('sex', sex);
+  if (selectedSample) {
+    fd.append('sample', selectedSample);
+  } else if (uploadedFile) {
+    fd.append('image', uploadedFile);
+  }
+
+  try {
+    const res = await fetch('/api/predict', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Server error');
+    }
+    const data = await res.json();
+    overlay.classList.remove('on');
+    showResults(data, pid, age, sex);
+  } catch(e) {
+    overlay.classList.remove('on');
+    showError('分析失败: ' + e.message);
+  }
+}
+
+function showResults(data, pid, age, sex) {
+  hideError();
+  const results = document.getElementById('results');
+  const sexLabel = sex === 'male' ? '男性' : '女性';
+
+  document.getElementById('resSub').textContent = `${pid} · ${age} 岁 · ${sexLabel}`;
+
+  // Brain age
+  document.getElementById('rAge').textContent = data.brain_age.toFixed(1);
+  const d = data.delta;
+  const dEl = document.getElementById('rDelta');
+  dEl.textContent = (d >= 0 ? '+' : '') + d.toFixed(1) + ' 年';
+  dEl.className = 'age-delta ' + (d >= 0 ? 'd-pos' : 'd-neg');
+  document.getElementById('rDeltaDesc').textContent =
+    d > 3 ? '脑龄显著高于实际年龄，建议进一步评估' :
+    d >= 0 ? '脑龄略高于实际年龄' : '脑龄低于实际年龄，大脑状态良好';
+
+  // Arc
+  const ratio = Math.min(data.brain_age / 100, 1);
+  const circ = 2 * Math.PI * 74;
+  document.getElementById('ageArc').style.strokeDashoffset = circ * (1 - ratio);
+  document.getElementById('ageArc').style.stroke =
+    d > 5 ? 'var(--red)' : d > 0 ? 'var(--amber)' : 'var(--green)';
+
+  // Staging
+  const stgColor = data.staging === 'CN' ? 'var(--green)' : data.staging === 'MCI' ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('rStg').textContent = data.staging;
+  document.getElementById('rStg').style.color = stgColor;
+  document.getElementById('rStgDesc').textContent = data.staging_desc;
+
+  setTimeout(() => {
+    const p = data.probabilities;
+    document.getElementById('bCN').style.width = p.cn + '%';
+    document.getElementById('bMCI').style.width = p.mci + '%';
+    document.getElementById('bAD').style.width = p.ad + '%';
+    document.getElementById('vCN').textContent = p.cn + '%';
+    document.getElementById('vMCI').textContent = p.mci + '%';
+    document.getElementById('vAD').textContent = p.ad + '%';
+  }, 200);
+
+  // Preview
+  const prevPanel = document.getElementById('prevPanel');
+  const imgUrl = data.image_url || '';
+  prevPanel.innerHTML = `
+    <div class="prev-img"><img src="${imgUrl}" alt="MRI"><div class="vlbl">INPUT</div></div>
+    <div class="prev-meta">
+      <div style="font-size:11px;font-weight:600;color:var(--primary-3);letter-spacing:.06em;text-transform:uppercase">扫描信息</div>
+      <div class="mi-row"><span class="mi-lbl">文件</span><span class="mi-val">${data.image_info.filename}</span></div>
+      <div class="mi-row"><span class="mi-lbl">尺寸</span><span class="mi-val">${data.image_info.width} × ${data.image_info.height}</span></div>
+      <div class="mi-row"><span class="mi-lbl">模型</span><span class="mi-val">${data.model_info.backbone}</span></div>
+      <div class="mi-row"><span class="mi-lbl">数据集</span><span class="mi-val">${data.model_info.dataset}</span></div>
+      <div class="mi-row"><span class="mi-lbl">QWK</span><span class="mi-val" style="color:var(--accent)">${data.model_info.qwk}</span></div>
+      <div class="mi-row"><span class="mi-lbl">置信度</span><span class="mi-val">${data.confidence}%</span></div>
+    </div>`;
+
+  // Regions
+  const regGrid = document.getElementById('regGrid');
+  regGrid.innerHTML = '';
+  data.regions.forEach((r, i) => {
+    const color = r.score > 70 ? 'var(--red)' : r.score > 45 ? 'var(--accent)' : r.score > 30 ? 'var(--amber)' : 'var(--green)';
+    const card = document.createElement('div');
+    card.className = 'reg-card';
+    card.innerHTML = `
+      <div class="reg-name">${r.name}</div>
+      <div class="reg-sub">${r.sub}</div>
+      <div class="reg-bar"><div class="reg-fill" style="width:0;background:${color}"></div></div>
+      <div class="reg-score">${r.score}%</div>`;
+    regGrid.appendChild(card);
+    setTimeout(() => card.querySelector('.reg-fill').style.width = r.score + '%', 300 + i * 80);
+  });
+
+  results.classList.add('show');
+  setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ── Utils ──
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('show'); }
+function hideError() { errorMsg.classList.remove('show'); }
+</script>
+</body>
+</html>
