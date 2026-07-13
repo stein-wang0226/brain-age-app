@@ -15,16 +15,17 @@ if [ ! -d "venv" ]; then
     python3 -m venv venv
 fi
 
-# Activate venv
-source venv/bin/activate
+# Use venv Python directly (absolute path, no source activate needed)
+PYTHON="$(pwd)/venv/bin/python"
+PIP="$(pwd)/venv/bin/pip"
 
 # Install dependencies
 echo "  Installing dependencies..."
-pip install -q -r requirements.txt
+$PIP install -q -r requirements.txt
 
 echo ""
 echo "  Starting server at http://localhost:5001"
 echo "  Press Ctrl+C to stop"
 echo ""
 
-python app.py
+$PYTHON app.py
