@@ -1,0 +1,13 @@
+services:
+  neuroage:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - uploads_data:/app/uploads
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+
+volumes:
+  uploads_data:

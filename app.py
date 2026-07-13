@@ -4,17 +4,26 @@ Flask backend with image upload API
 """
 
 import os
-import json
+import uuid
 import random
+import logging
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from werkzeug.utils import secure_filename
 from PIL import Image
 
+# ── Logging ──
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
-app.config['SAMPLES_FOLDER'] = os.path.join(os.path.dirname(__file__), 'brain')
+app.config['SAMPLES_FOLDER'] = os.path.join(os.path.dirname(__file__), 'samples')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tiff', 'bmp', 'webp'}
 
@@ -171,6 +180,18 @@ def list_samples():
     return jsonify(list(subjects.values()))
 
 
+@app.route('/api/health')
+def health():
+    """Health check endpoint."""
+    samples_dir = app.config['SAMPLES_FOLDER']
+    return jsonify({
+        'status': 'ok',
+        'version': 'NeuroAge v1.0',
+        'samples_available': os.path.isdir(samples_dir),
+        'sample_count': len([f for f in os.listdir(samples_dir) if allowed_file(f)]) if os.path.isdir(samples_dir) else 0
+    })
+
+
 @app.route('/api/samples/<path:filename>')
 def serve_sample(filename):
     """Serve a sample image."""
@@ -189,15 +210,32 @@ def predict():
     Accept an image upload and return brain age prediction.
     Supports both file upload (multipart) and sample selection (JSON).
     """
-    age = int(request.form.get('age', 72))
+    # ── Input validation ──
+    age_str = request.form.get('age', '72')
+    try:
+        age = int(age_str)
+    except (ValueError, TypeError):
+        return jsonify({'error': '年龄必须为整数'}), 400
+    if age < 30 or age > 100:
+        return jsonify({'error': '年龄必须在 30-100 之间'}), 400
+
     sex = request.form.get('sex', 'male')
+    if sex not in ('male', 'female'):
+        return jsonify({'error': '性别必须为 male 或 female'}), 400
+
     image_path = None
     saved_filename = None
 
     # Case 1: Sample image selected
     sample_name = request.form.get('sample')
     if sample_name:
-        image_path = os.path.join(app.config['SAMPLES_FOLDER'], secure_filename(sample_name))
+        safe_name = secure_filename(sample_name)
+        image_path = os.path.join(app.config['SAMPLES_FOLDER'], safe_name)
+        # Path traversal check
+        real_path = os.path.realpath(image_path)
+        samples_real = os.path.realpath(app.config['SAMPLES_FOLDER'])
+        if not real_path.startswith(samples_real):
+            return jsonify({'error': 'Invalid file path'}), 400
         if not os.path.isfile(image_path):
             return jsonify({'error': f'Sample not found: {sample_name}'}), 404
 
@@ -207,9 +245,11 @@ def predict():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         if file and allowed_file(file.filename):
-            saved_filename = secure_filename(file.filename)
+            base_name = secure_filename(file.filename)
+            saved_filename = f"{uuid.uuid4().hex[:8]}_{base_name}"
             image_path = os.path.join(app.config['UPLOAD_FOLDER'], saved_filename)
             file.save(image_path)
+            logger.info(f"Uploaded: {saved_filename}")
         else:
             return jsonify({'error': 'Invalid file type'}), 400
 
@@ -217,6 +257,7 @@ def predict():
         return jsonify({'error': 'No image provided. Upload a file or select a sample.'}), 400
 
     # Run prediction
+    logger.info(f"Predict: age={age}, sex={sex}, image={os.path.basename(image_path)}")
     result = generate_prediction(image_path, age, sex)
 
     # Add image URL for display
@@ -232,3 +273,22 @@ if __name__ == '__main__':
     print("\n  NeuroAge - Brain Age Prediction System")
     print("  http://localhost:5001\n")
     app.run(host='0.0.0.0', port=5001, debug=True)
+
+
+# ── Global error handlers ──
+@app.errorhandler(404)
+def not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Not found'}), 404
+    return render_template('index.html'), 404
+
+
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': '文件过大，最大支持 16MB'}), 413
+
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error(f"Server error: {e}")
+    return jsonify({'error': '服务器内部错误'}), 500

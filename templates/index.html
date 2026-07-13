@@ -186,6 +186,17 @@ footer .container{display:flex;justify-content:space-between;align-items:center}
 .f-left strong{color:var(--primary);font-weight:600}
 .f-right{font-size:11px;color:var(--muted);font-family:var(--font-d);font-style:italic}
 
+/* View tabs */
+.view-tabs{display:flex;gap:4px;margin-bottom:10px}
+.view-tab{padding:4px 12px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border:1px solid var(--cream-3);background:var(--surface-2);color:var(--primary-3);transition:.2s}
+.view-tab:hover{border-color:var(--muted)}
+.view-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Download button */
+.btn-dl{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:100px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-family:var(--font-b);font-size:12px;font-weight:600;cursor:pointer;transition:.25s}
+.btn-dl:hover{background:var(--accent);color:#fff}
+.btn-dl svg{width:14px;height:14px}
+
 @media(max-width:768px){
   .form-row{grid-template-columns:1fr}
   .res-grid{grid-template-columns:1fr}
@@ -196,6 +207,8 @@ footer .container{display:flex;justify-content:space-between;align-items:center}
   .main-card{padding:28px}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -287,6 +300,10 @@ footer .container{display:flex;justify-content:space-between;align-items:center}
     <div class="res-head">
       <h2>评估报告</h2>
       <p id="resSub"></p>
+      <button class="btn-dl" id="btnDownload" onclick="exportPDF()" style="margin-top:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>下载 PDF 报告</span>
+      </button>
     </div>
     <div class="res-grid">
       <div class="rpanel age-panel">
@@ -354,6 +371,8 @@ footer .container{display:flex;justify-content:space-between;align-items:center}
 <script>
 let uploadedFile = null;
 let selectedSample = null;
+let currentSampleViews = {};
+let currentSamplePrefix = '';
 
 // ── Drop zone ──
 const dropZone = document.getElementById('dropZone');
@@ -445,13 +464,14 @@ async function loadSamples() {
       card.className = 'sample-card';
       card.dataset.sample = viewFile;
       card.dataset.sub = sub.id;
+      card.dataset.views = JSON.stringify(sub.views);
       card.innerHTML = `
         <img src="/api/samples/${viewFile}" alt="${sub.id}">
         <div class="sample-info">
           <span class="sample-id">${sub.id.toUpperCase()}</span>
           <span class="sample-badge ${badge}">${label}</span>
         </div>`;
-      card.addEventListener('click', () => selectSample(card, viewFile));
+      card.addEventListener('click', () => selectSample(card, viewFile, sub.views));
       grid.appendChild(card);
     });
     samplesLoaded = true;
@@ -460,10 +480,13 @@ async function loadSamples() {
   }
 }
 
-function selectSample(card, filename) {
+function selectSample(card, filename, views) {
   document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   selectedSample = filename;
+  currentSampleViews = views || {};
+  const parts = filename.split('_');
+  currentSamplePrefix = parts.length >= 2 ? parts[0] : '';
   // Clear uploaded file
   uploadedFile = null;
   fileInput.value = '';
@@ -573,9 +596,21 @@ function showResults(data, pid, age, sex) {
   // Preview
   const prevPanel = document.getElementById('prevPanel');
   const imgUrl = data.image_url || '';
+  // Build view tabs for multi-view samples
+  let viewTabsHtml = '';
+  const viewNames = { axial: 'Axial 轴位', coronal: 'Coronal 冠状', sagittal: 'Sagittal 矢状' };
+  const availableViews = Object.keys(currentSampleViews);
+  if (availableViews.length > 1) {
+    viewTabsHtml = '<div class="view-tabs" id="viewTabs">' +
+      availableViews.map(v => {
+        const isActive = currentSamplePrefix && imgUrl.includes(currentSamplePrefix + '_' + v);
+        return `<div class="view-tab${isActive ? ' active' : ''}" data-view="${v}" onclick="switchView('${v}')">${viewNames[v] || v}</div>`;
+      }).join('') + '</div>';
+  }
   prevPanel.innerHTML = `
-    <div class="prev-img"><img src="${imgUrl}" alt="MRI"><div class="vlbl">INPUT</div></div>
+    <div class="prev-img" id="prevImgWrap"><img id="prevResultImg" src="${imgUrl}" alt="MRI"><div class="vlbl" id="prevViewLbl">INPUT</div></div>
     <div class="prev-meta">
+      ${viewTabsHtml}
       <div style="font-size:11px;font-weight:600;color:var(--primary-3);letter-spacing:.06em;text-transform:uppercase">扫描信息</div>
       <div class="mi-row"><span class="mi-lbl">文件</span><span class="mi-val">${data.image_info.filename}</span></div>
       <div class="mi-row"><span class="mi-lbl">尺寸</span><span class="mi-val">${data.image_info.width} × ${data.image_info.height}</span></div>
@@ -603,6 +638,80 @@ function showResults(data, pid, age, sex) {
 
   results.classList.add('show');
   setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ── View switching ──
+function switchView(view) {
+  if (!currentSamplePrefix || !currentSampleViews[view]) return;
+  const filename = currentSampleViews[view];
+  document.getElementById('prevResultImg').src = '/api/samples/' + filename;
+  document.getElementById('prevViewLbl').textContent = view.toUpperCase();
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.querySelector(`.view-tab[data-view="${view}"]`);
+  if (tab) tab.classList.add('active');
+}
+
+// ── PDF export ──
+async function exportPDF() {
+  const btn = document.getElementById('btnDownload');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span>正在生成 PDF...</span>';
+  btn.disabled = true;
+
+  try {
+    const el = document.getElementById('results');
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#faf8f4',
+      logging: false,
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentW = pageW - margin * 2;
+    const imgH = (canvas.height * contentW) / canvas.width;
+
+    // Header
+    pdf.setFontSize(16);
+    pdf.text('NeuroAge Brain Age Report', pageW / 2, 15, { align: 'center' });
+    pdf.setFontSize(9);
+    const subText = document.getElementById('resSub').textContent;
+    pdf.text(subText, pageW / 2, 21, { align: 'center' });
+    pdf.text('Generated: ' + new Date().toLocaleString(), pageW / 2, 25, { align: 'center' });
+
+    // Content
+    const imgData = canvas.toDataURL('image/png');
+    const startY = 30;
+    const availableH = pageH - startY - margin;
+
+    if (imgH <= availableH) {
+      pdf.addImage(imgData, 'PNG', margin, startY, contentW, imgH);
+    } else {
+      // Multi-page
+      let remainingH = imgH;
+      let pos = 0;
+      while (remainingH > 0) {
+        if (pos > 0) pdf.addPage();
+        const sliceH = Math.min(availableH, remainingH);
+        pdf.addImage(imgData, 'PNG', margin, startY - pos, contentW, imgH);
+        pos += availableH;
+        remainingH -= availableH;
+      }
+    }
+
+    const pid = document.getElementById('f-id').value || 'report';
+    pdf.save(`NeuroAge_${pid}_${new Date().toISOString().slice(0,10)}.pdf`);
+  } catch(e) {
+    console.error('PDF export failed:', e);
+    alert('PDF 导出失败，请重试');
+  } finally {
+    btn.innerHTML = origText;
+    btn.disabled = false;
+  }
 }
 
 // ── Utils ──

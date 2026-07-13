@@ -43,6 +43,9 @@ bash run.sh
 
 # 方式二：手动启动
 ./venv/bin/python app.py
+
+# 方式三：Docker 部署
+docker compose up -d
 ```
 
 服务启动后访问 **http://localhost:5001**
@@ -88,6 +91,7 @@ brain-age-app/
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
+| GET | `/api/health` | 健康检查 |
 | GET | `/` | 前端页面 |
 | GET | `/api/samples` | 获取示例影像列表 |
 | GET | `/api/samples/<filename>` | 获取示例图片 |
