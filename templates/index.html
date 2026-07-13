@@ -67,8 +67,8 @@ nav{position:sticky;top:0;z-index:100;height:60px;display:flex;align-items:cente
 .drop-icon{font-size:32px;margin-bottom:8px;opacity:.4}
 .drop-text{font-size:14px;color:var(--primary-2);font-weight:500;margin-bottom:4px}
 .drop-hint{font-size:12px;color:var(--muted)}
-.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.preview-wrap{position:relative;display:inline-block}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:0}
+.preview-wrap{position:relative;display:inline-block;z-index:1}
 .preview-wrap img{max-width:100%;max-height:200px;border-radius:var(--rs);display:block}
 .preview-remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 
