@@ -4,3 +4,4 @@ __pycache__/
 .DS_Store
 uploads/
 *.egg-info/
+MICCAI2026*.pdf
