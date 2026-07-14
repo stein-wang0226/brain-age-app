@@ -27,6 +27,14 @@ app.config['SAMPLES_FOLDER'] = os.path.join(os.path.dirname(__file__), 'samples'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tiff', 'bmp', 'webp'}
 
+# Ground-truth labels for sample subjects (for demo consistency)
+SAMPLE_LABELS = {
+    'sub-0001': {'staging': 'MCI', 'staging_desc': '轻度认知障碍', 'brain_age_offset': 3.5},
+    'sub-0002': {'staging': 'CN',  'staging_desc': '认知正常',     'brain_age_offset': -1.5},
+    'sub-0003': {'staging': 'AD',  'staging_desc': '阿尔茨海默病', 'brain_age_offset': 8.0},
+    'sub-0010': {'staging': 'MCI', 'staging_desc': '轻度认知障碍', 'brain_age_offset': 4.0},
+}
+
 # Ensure directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -35,38 +43,66 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def generate_prediction(image_path, age, sex):
+def generate_prediction(image_path, age, sex, sample_name=None):
     """
     Mock brain age prediction — returns random but clinically reasonable values.
     In production, this would call the actual CLIP + MoE model.
+    For known samples, results are aligned with ground-truth labels.
     """
-    # Generate brain age: normally distributed around chronological age
-    # Mean offset +2yr (slight aging bias), std 4yr for variety
-    age_offset = random.gauss(2.0, 4.0)
+    # Check if this is a known sample with ground-truth label
+    gt = None
+    if sample_name:
+        sub_id = sample_name.rsplit('_', 1)[0]  # e.g. 'sub-0001_axial.png' -> 'sub-0001'
+        gt = SAMPLE_LABELS.get(sub_id)
+
+    if gt:
+        # Use ground-truth aligned prediction for known samples
+        age_offset = gt['brain_age_offset'] + random.gauss(0, 0.5)  # small noise
+        staging = gt['staging']
+        staging_desc = gt['staging_desc']
+    else:
+        # Random prediction for uploaded images
+        age_offset = random.gauss(2.0, 4.0)
+        staging = None
+        staging_desc = None
+
     brain_age = round(age + age_offset, 1)
     brain_age = max(30, min(100, brain_age))  # clamp
-
     delta = round(brain_age - age, 1)
 
-    # Generate staging probabilities
-    if brain_age - age > 5:
-        ad_prob = random.uniform(0.55, 0.85)
-        mci_prob = random.uniform(0.10, 0.30)
+    # Generate staging probabilities consistent with the staging label
+    if staging == 'AD':
+        ad_prob = random.uniform(0.65, 0.85)
+        mci_prob = random.uniform(0.10, 0.25)
         cn_prob = round(1 - ad_prob - mci_prob, 3)
-        staging = 'AD'
-        staging_desc = '阿尔茨海默病'
-    elif brain_age - age > 1:
-        mci_prob = random.uniform(0.55, 0.85)
-        cn_prob = random.uniform(0.05, 0.25)
+    elif staging == 'MCI':
+        mci_prob = random.uniform(0.60, 0.80)
+        cn_prob = random.uniform(0.08, 0.20)
         ad_prob = round(1 - mci_prob - cn_prob, 3)
-        staging = 'MCI'
-        staging_desc = '轻度认知障碍'
-    else:
+    elif staging == 'CN':
         cn_prob = random.uniform(0.75, 0.92)
         mci_prob = random.uniform(0.05, 0.15)
         ad_prob = round(1 - cn_prob - mci_prob, 3)
-        staging = 'CN'
-        staging_desc = '认知正常'
+    else:
+        # Determine staging from brain age gap for uploaded images
+        if brain_age - age > 5:
+            ad_prob = random.uniform(0.55, 0.85)
+            mci_prob = random.uniform(0.10, 0.30)
+            cn_prob = round(1 - ad_prob - mci_prob, 3)
+            staging = 'AD'
+            staging_desc = '阿尔茨海默病'
+        elif brain_age - age > 1:
+            mci_prob = random.uniform(0.55, 0.85)
+            cn_prob = random.uniform(0.05, 0.25)
+            ad_prob = round(1 - mci_prob - cn_prob, 3)
+            staging = 'MCI'
+            staging_desc = '轻度认知障碍'
+        else:
+            cn_prob = random.uniform(0.75, 0.92)
+            mci_prob = random.uniform(0.05, 0.15)
+            ad_prob = round(1 - cn_prob - mci_prob, 3)
+            staging = 'CN'
+            staging_desc = '认知正常'
 
     cn_prob = round(max(0.01, cn_prob), 3)
     mci_prob = round(max(0.01, mci_prob), 3)
@@ -177,6 +213,12 @@ def list_samples():
                 subjects[sub_id] = {'id': sub_id, 'views': {}}
             subjects[sub_id]['views'][view] = f
 
+    # Attach ground-truth labels
+    for sub in subjects.values():
+        gt = SAMPLE_LABELS.get(sub['id'])
+        if gt:
+            sub['label'] = gt['staging']
+
     return jsonify(list(subjects.values()))
 
 
@@ -258,7 +300,7 @@ def predict():
 
     # Run prediction
     logger.info(f"Predict: age={age}, sex={sex}, image={os.path.basename(image_path)}")
-    result = generate_prediction(image_path, age, sex)
+    result = generate_prediction(image_path, age, sex, sample_name=sample_name)
 
     # Add image URL for display
     if saved_filename:

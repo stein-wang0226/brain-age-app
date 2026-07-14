@@ -452,13 +452,12 @@ async function loadSamples() {
     const grid = document.getElementById('sampleGrid');
     grid.innerHTML = '';
 
-    const badges = {'sub-0001':'b-mci','sub-0002':'b-cn','sub-0003':'b-ad','sub-0010':'b-mci'};
-    const labels = {'sub-0001':'MCI','sub-0002':'CN','sub-0003':'AD','sub-0010':'MCI'};
+    const badgeMap = {'CN':'b-cn','MCI':'b-mci','AD':'b-ad'};
 
     subjects.forEach(sub => {
       const viewFile = sub.views.axial || sub.views.coronal || sub.views.sagittal || Object.values(sub.views)[0];
-      const badge = badges[sub.id] || 'b-mci';
-      const label = labels[sub.id] || '—';
+      const label = sub.label || '—';
+      const badge = badgeMap[label] || 'b-mci';
 
       const card = document.createElement('div');
       card.className = 'sample-card';
